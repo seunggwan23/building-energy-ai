@@ -185,17 +185,29 @@ def restart():
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     # OIDC 로그인 상태인 경우 완벽한 로그아웃을 위해 st.logout() 호출
-    if hasattr(st, "user") and st.user.is_logged_in:
-        st.logout()
+    try:
+        _u = getattr(st, "user", getattr(st, "experimental_user", None))
+        if _u and getattr(_u, "email", None):
+            st.logout()
+    except Exception:
+        pass
 
 # ── 상단/사이드바에 실시간 로그인 상태 위젯 노출 ──
 if st.session_state.get("username"):
     with st.sidebar:
+        is_oidc_logged_in = False
+        try:
+            _u = getattr(st, "user", getattr(st, "experimental_user", None))
+            if _u and getattr(_u, "email", None):
+                is_oidc_logged_in = True
+        except Exception:
+            pass
+            
         st.markdown(f"""
         <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:12px 16px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.02);">
             <div style="font-size:11px;color:#64748B;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;">👤 인증된 사용자</div>
             <div style="font-size:13px;font-weight:700;color:#0F172A;margin-top:4px;word-break:break-all;">{st.session_state.username}</div>
-            {"<div style='font-size:10px;color:#10B981;margin-top:2px;font-weight:600;'>🟢 소셜 계정 실시간 동기화 중</div>" if hasattr(st, "user") and st.user.is_logged_in else "<div style='font-size:10px;color:#F59E0B;margin-top:2px;font-weight:600;'>🟡 테스트(Mock) 모드 접속 중</div>"}
+            {"<div style='font-size:10px;color:#10B981;margin-top:2px;font-weight:600;'>🟢 소셜 계정 실시간 동기화 중</div>" if is_oidc_logged_in else "<div style='font-size:10px;color:#F59E0B;margin-top:2px;font-weight:600;'>🟡 테스트(Mock) 모드 접속 중</div>"}
         </div>
         """, unsafe_allow_html=True)
         if st.button("🚪 로그아웃 / 세션 초기화", use_container_width=True, key="sidebar_logout"):
