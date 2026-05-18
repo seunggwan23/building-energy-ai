@@ -151,11 +151,17 @@ if "username" not in st.session_state:
     st.session_state.username = None
 
 # OIDC 로그인 여부 확인 및 세션 연동
-if hasattr(st, "user") and st.user.is_logged_in:
-    user_email = getattr(st.user, "email", "")
-    user_name = getattr(st.user, "name", "")
-    # 이메일을 우선 사용하되, 없을 경우 사용자 이름을 식별자로 사용
-    st.session_state.username = user_email if user_email else user_name
+try:
+    _user = getattr(st, "user", getattr(st, "experimental_user", None))
+    if _user:
+        user_email = getattr(_user, "email", "")
+        user_name = getattr(_user, "name", "")
+        if user_email or user_name:
+            st.session_state.username = user_email if user_email else user_name
+except Exception:
+    pass
+
+if st.session_state.username:
     
     # 처음 로그인에 성공한 경우 자동으로 Step 1로 전환
     if st.session_state.step == 0:
